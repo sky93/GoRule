@@ -372,3 +372,36 @@ func ExampleParseQuery() {
 	fmt.Println(ok)
 	// Output: true
 }
+
+func BenchmarkParseQuery(b *testing.B) {
+	query := `(usr_id eq 15 or usr_id eq 99) and amount gt [d]"12345.67"`
+	for i := 0; i < b.N; i++ {
+		_, err := ParseQuery(query, nil)
+		if err != nil {
+			b.Fatalf("ParseQuery error: %v", err)
+		}
+	}
+}
+
+func BenchmarkEvaluate(b *testing.B) {
+	query := `(usr_id eq 17 or usr_id eq 99) and amount gt [d]"12345.67"`
+	rule, err := ParseQuery(query, nil)
+	if err != nil {
+		b.Fatalf("ParseQuery error: %v", err)
+	}
+
+	// example data for evaluation
+	evals := []Evaluation{
+		{Param: rule.Params[0], Result: int64(17)},
+		{Param: rule.Params[1], Result: int64(99999)}, // amount -> decimal
+	}
+
+	b.ResetTimer() // ignore parse time in benchmark
+
+	for i := 0; i < b.N; i++ {
+		_, err := rule.Evaluate(evals)
+		if err != nil {
+			b.Fatalf("Evaluate error: %v", err)
+		}
+	}
+}
