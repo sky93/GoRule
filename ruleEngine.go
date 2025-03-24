@@ -1,9 +1,9 @@
-package goRule
+package rule
 
 import (
 	"fmt"
 	"github.com/shopspring/decimal"
-	parser "github.com/sky93/GoRule/internal/antlr4"
+	parser "github.com/sky93/go-rule/internal/antlr4"
 	"golang.org/x/exp/constraints"
 	"reflect"
 	"strconv"

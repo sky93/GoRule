@@ -1,4 +1,4 @@
-package goRule
+package rule
 
 import (
 	"fmt"

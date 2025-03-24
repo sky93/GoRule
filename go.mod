@@ -1,4 +1,4 @@
-module github.com/sky93/GoRule
+module github.com/sky93/go-rule
 
 go 1.23.0
 
