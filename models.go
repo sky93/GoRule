@@ -10,6 +10,13 @@ const (
 	Expression
 )
 
+func (it InputType) String() string  {
+	if it == FunctionCall {
+		return "FunctionCall"
+	}
+	return "Expression"
+}
+
 // ArgumentType indicates how to interpret the argument's Value.
 type ArgumentType int
 
@@ -29,6 +36,30 @@ const (
 	ArgTypeUnsignedInteger32
 	ArgTypeDecimal
 )
+
+var argToString = map[ArgumentType]string{
+	ArgTypeUnknown:           "unknown",
+	ArgTypeString:            "string",
+	ArgTypeInteger:           "int",
+	ArgTypeUnsignedInteger:   "uint",
+	ArgTypeFloat64:           "float64",
+	ArgTypeBoolean:           "bool",
+	ArgTypeNull:              "nil",
+	ArgTypeList:              "list",
+	ArgTypeFloat32:           "float32",
+	ArgTypeInteger32:         "int32",
+	ArgTypeInteger64:         "int64",
+	ArgTypeUnsignedInteger64: "uint64",
+	ArgTypeUnsignedInteger32: "uint32",
+	ArgTypeDecimal:           "decimal",
+}
+
+func (at ArgumentType) String() string {
+	if s, ok := argToString[at]; ok {
+		return s
+	}
+	return "unknown"
+}
 
 // FunctionArgument represents a single argument in a function call, e.g. (30, "margin").
 type FunctionArgument struct {
