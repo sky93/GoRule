@@ -10,7 +10,8 @@ const (
 	Expression
 )
 
-func (it InputType) String() string  {
+// String returns the string representation of the InputType, either "FunctionCall" or "Expression", based on its value.
+func (it InputType) String() string {
 	if it == FunctionCall {
 		return "FunctionCall"
 	}
@@ -54,6 +55,7 @@ var argToString = map[ArgumentType]string{
 	ArgTypeDecimal:           "decimal",
 }
 
+// String returns the string representation of the ArgumentType based on a predefined map or "unknown" if not found.
 func (at ArgumentType) String() string {
 	if s, ok := argToString[at]; ok {
 		return s
@@ -61,7 +63,7 @@ func (at ArgumentType) String() string {
 	return "unknown"
 }
 
-// FunctionArgument represents a single argument in a function call, e.g. (30, "margin").
+// FunctionArgument represents a single argument in a function call, e.g. (1, "Whitman").
 type FunctionArgument struct {
 	ArgumentType ArgumentType
 	Value        any
@@ -69,54 +71,57 @@ type FunctionArgument struct {
 
 // Parameter represents either a function call or an attribute expression.
 //
-// For example, "tradeVolDay(30, "margin") dgt "100"" is a function call parameter.
-// Meanwhile, "usr_id eq 17" is an attribute expression parameter.
+// For example, "user_age(12345) gt 18" is a function call parameter.
+// Meanwhile, "user_age eq 18" is an attribute expression parameter.
 //
-// The fields Name, operator, compareValue, etc. let the user see what was parsed.
+// The fields Name lets the user see what was parsed.
 //
 //   - If InputType == FunctionCall, then functionArguments may be set
-//     (like the 30, "margin" in tradeVolDay(30, "margin")).
+//     (like the 1, "Whitman" in user_age(1, "Whitman")).
 //   - If InputType == Expression, then operator & compareValue represent a direct comparison
-//     (like eq "someValue" or gt 100).
+//     (like eq "someValue" or gt 18).
 type Parameter struct {
 	id                int
 	Name              string
 	InputType         InputType
 	FunctionArguments []FunctionArgument
 	strictTypeCheck   bool
-
 	// If InputType == Expression, this indicates the type of compareValue (string, int, etc.).
-	Expression ArgumentType
-
-	// Operator is one of eq, ne, gt, lt, ge, le, co, sw, ew, in, dgt, etc.
+	Expression   ArgumentType
 	operator     string
 	compareValue any
 }
 
 type exprTree struct {
-	Not   bool      // if true, invert the result of this node
-	Op    string    // "", "and", or "or"
-	Left  *exprTree // used if Op is logical (and/or)
-	Right *exprTree // used if Op is logical (and/or)
-	Param *Parameter
+	not  bool
+	op    string
+	left  *exprTree
+	right *exprTree
+	param *Parameter
 }
 
+// ErrorListener is a custom error listener that captures syntax errors during parsing and stores error information.
 type ErrorListener struct {
 	*antlr.DefaultErrorListener
 	hasErrors bool
 	errMsg    error
 }
 
-type GoRule struct {
-	exprTree  exprTree
+// Rule represents a rule containing a slice of Parameter for evaluation and processing.
+type Rule struct {
 	Params    []Parameter
+	exprTree  exprTree
 	debugMode bool
 }
 
+// Config represents a configuration with options to control behavior such as enabling debug mode.
 type Config struct {
 	DebugMode bool
 }
 
+// Evaluation represents a parameter-result pair used in the evaluation process.
+// The Param field holds the input Parameter being evaluated.
+// The Result field holds the evaluation output for the given Parameter.
 type Evaluation struct {
 	Param  Parameter
 	Result any

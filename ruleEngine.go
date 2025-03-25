@@ -17,21 +17,7 @@ func (l *ErrorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int,
 	l.errMsg = NewSyntaxError(fmt.Sprintf("%d:%d: %s", line, column, msg))
 }
 
-// -------------------------------------------------------------------
-// 3) Expression Tree
-//
-// We'll parse into a tree of boolean logic (and/or, possibly not)
-// with leaf nodes referencing a Parameter for a comparison or function call.
-// -------------------------------------------------------------------
-
-// evaluate uses a map of Name->Value to evaluate the expression tree to true/false.
-//   - For an attribute expression, it compares values[e.Param.Name] to param.compareValue via param.operator.
-//   - For a function call, we also rely on the user to supply values for param.Name (the function Name).
-//     For example, tradeVolDay -> some numeric result in the map.
-//
-// If a node is "not" flagged, we invert the final result.
-
-func (g *GoRule) Evaluate(values []Evaluation) (bool, error) {
+func (g *Rule) Evaluate(values []Evaluation) (bool, error) {
 	valuesMap := make(map[int]any)
 	for _, value := range values {
 		valuesMap[value.Param.id] = value.Result
@@ -45,49 +31,49 @@ func (e *exprTree) evaluate(values map[int]any, debugMode bool) (bool, error) {
 	}
 
 	// If it's a logical node ("and"/"or")
-	switch e.Op {
+	switch e.op {
 	case "and":
-		lRes, lErr := e.Left.evaluate(values, debugMode)
+		lRes, lErr := e.left.evaluate(values, debugMode)
 		if lErr != nil {
 			return false, lErr
 		}
-		rRes, rErr := e.Right.evaluate(values, debugMode)
+		rRes, rErr := e.right.evaluate(values, debugMode)
 		if rErr != nil {
 			return false, rErr
 		}
 		res := lRes && rRes
-		if e.Not {
+		if e.not {
 			return !res, nil
 		}
 		return res, nil
 	case "or":
-		lRes, lErr := e.Left.evaluate(values, debugMode)
+		lRes, lErr := e.left.evaluate(values, debugMode)
 		if lErr != nil {
 			return false, lErr
 		}
-		rRes, rErr := e.Right.evaluate(values, debugMode)
+		rRes, rErr := e.right.evaluate(values, debugMode)
 		if rErr != nil {
 			return false, rErr
 		}
 		res := lRes || rRes
-		if e.Not {
+		if e.not {
 			return !res, nil
 		}
 		return res, nil
 	}
 
-	// Otherwise it's a leaf node with Param
-	p := e.Param
+	// Otherwise it's a leaf node with param
+	p := e.param
 
 	// If the user didn't provide a Value for p.Name, check if operator is "pr" (presence)
 	val, ok := values[p.id]
 	if !ok {
 		if p.operator == "pr" {
-			// 'pr' means "present". So if it's not present, that's false, or invert if Not
-			return e.Not == true, nil
+			// 'pr' means "present". So if it's not present, that's false, or invert if not
+			return e.not == true, nil
 		}
 		// Otherwise we can't evaluate. We'll treat it as false
-		if e.Not {
+		if e.not {
 			return true, nil
 		}
 		return false, nil
@@ -96,12 +82,12 @@ func (e *exprTree) evaluate(values map[int]any, debugMode bool) (bool, error) {
 	// Compare
 	out, err := compareOperator(val, p.operator, p.compareValue, p.strictTypeCheck)
 	if debugMode {
-		fmt.Printf("Name: %s, Left Value: %v<%T>, Operator:%s, Right Value: %v<%T>, Strict Type Check: %t, Result: %t\n", p.Name, val, val, p.operator, p.compareValue, p.compareValue, p.strictTypeCheck, out)
+		fmt.Printf("Name: %s, left Value: %v<%T>, Operator:%s, right Value: %v<%T>, Strict Type Check: %t, Result: %t\n", p.Name, val, val, p.operator, p.compareValue, p.compareValue, p.strictTypeCheck, out)
 	}
 	if err != nil {
 		return false, err
 	}
-	if e.Not {
+	if e.not {
 		return !out, nil
 	}
 	return out, nil
@@ -321,7 +307,7 @@ func (v *queryVisitor) visitParenExp(ctx *parser.ParenExpContext) (*exprTree, er
 	subExp := sub.(*exprTree)
 	notToken := ctx.NOT()
 	if notToken != nil {
-		subExp.Not = !subExp.Not
+		subExp.not = !subExp.not
 	}
 	return subExp, nil
 }
@@ -337,7 +323,7 @@ func (v *queryVisitor) visitPresentExp(ctx *parser.PresentExpContext) (*exprTree
 		operator:  "pr",
 	}
 	v.parameters = append(v.parameters, p)
-	return &exprTree{Param: &p}, nil
+	return &exprTree{param: &p}, nil
 }
 
 // logicalExp => query SP LOGICAL_OPERATOR SP query
@@ -356,9 +342,9 @@ func (v *queryVisitor) visitLogicalExp(ctx *parser.LogicalExpContext) (*exprTree
 	op := strings.ToLower(ctx.LOGICAL_OPERATOR().GetText()) // "and" or "or"
 
 	return &exprTree{
-		Op:    op,
-		Left:  leftNode,
-		Right: rightNode,
+		op:    op,
+		left:  leftNode,
+		right: rightNode,
 	}, nil
 }
 
@@ -398,7 +384,7 @@ func (v *queryVisitor) visitCompareExp(ctx *parser.CompareExpContext) (*exprTree
 		p.FunctionArguments = funcArgs
 	}
 	v.parameters = append(v.parameters, p)
-	return &exprTree{Param: &p}, nil
+	return &exprTree{param: &p}, nil
 }
 
 // parseFunctionCall extracts function Name + arguments
@@ -578,7 +564,7 @@ func unquoteString(s string) string {
 // -------------------------------------------------------------------
 
 // ParseQuery returns the expression tree, the slice of parameters, and an error if any.
-func ParseQuery(input string, config *Config) (GoRule, error) {
+func ParseQuery(input string, config *Config) (Rule, error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -614,17 +600,17 @@ func ParseQuery(input string, config *Config) (GoRule, error) {
 	tree := p.Root() // parse
 
 	if errListener.hasErrors {
-		return GoRule{}, errListener.errMsg
+		return Rule{}, errListener.errMsg
 	}
 
 	vis := &queryVisitor{}
 	exprAny, err := vis.VisitRoot(tree.(*parser.RootContext))
 	if err != nil {
-		return GoRule{}, err
+		return Rule{}, err
 	}
 	expr, _ := exprAny.(*exprTree)
 
-	return GoRule{
+	return Rule{
 		exprTree:  *expr,
 		Params:    vis.parameters,
 		debugMode: debugMode,

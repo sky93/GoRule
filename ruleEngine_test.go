@@ -310,9 +310,9 @@ func TestBadQueries(t *testing.T) {
 func TestUnknownOperator(t *testing.T) {
 	// We can forcibly place an unknown operator in the Parameter, or parse something that
 	// your grammar doesn't (but let's do it forcibly).
-	rule := GoRule{
+	rule := Rule{
 		exprTree: exprTree{
-			Param: &Parameter{
+			param: &Parameter{
 				id:         0,
 				Name:       "dummy",
 				operator:   "xxx", // not recognized
