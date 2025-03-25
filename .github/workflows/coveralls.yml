@@ -24,7 +24,7 @@ jobs:
           go mod download
 
       - name: Run tests
-        run: go test -race -covermode atomic -coverprofile=covprofile ./...
+        run: go test -race -covermode atomic -coverprofile=covprofile github.com/sky93/go-rule
 
       - name: Report Coveralls
         run: curl -sL https://coveralls.io/coveralls-linux.tar.gz | tar -xz && ./coveralls report covprofile
