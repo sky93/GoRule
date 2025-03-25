@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sky93/go-rule)](https://goreportcard.com/report/github.com/sky93/go-rule)
 ![Go Version](https://img.shields.io/badge/go_version-1.23+-green)
+[![Coverage Status](https://coveralls.io/repos/github/sky93/go-rule/badge.svg)](https://coveralls.io/github/sky93/go-rule)
 
 A **lightweight rule parsing and evaluation library** for Go. Define human-readable queries (e.g. `score gt 100 and active eq true`) and evaluate them against real-world data. Supports **parentheses**, **logical operators** (`and`, `or`, `not`), **type annotations** (`[i64]`, `[f64]`, `[d]`, etc.), **function calls**, and more.
 
