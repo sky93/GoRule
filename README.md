@@ -1,16 +1,18 @@
+![go-rule logo](/logo.png)
+
+
 # go-rule
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/sky93/go-rule)](https://goreportcard.com/report/github.com/sky93/go-rule)
 ![Go Version](https://img.shields.io/badge/go_version-1.23+-green)
 
-
 A **lightweight rule parsing and evaluation library** for Go. Define human-readable queries (e.g. `score gt 100 and active eq true`) and evaluate them against real-world data. Supports **parentheses**, **logical operators** (`and`, `or`, `not`), **type annotations** (`[i64]`, `[f64]`, `[d]`, etc.), **function calls**, and more.
 
 > **Key features**
 > - Simple query language (operators like `eq`, `gt`, `lt`, `pr`, `in`, `co`, `sw`, `ew`, etc.).
 > - Built on [ANTLR4](https://github.com/antlr4-go/antlr) grammar.
-> - Support for typed values (`[i64]"123"`, `[d]"12.34"`) and typed comparisons (strict type checks).
+> - Support for typed values (`[i64]"123"`, `[f64]"123.45"`, `[d]"12.34"`) and typed comparisons (strict type checks).
 > - Handle decimals via [shopspring/decimal](https://github.com/shopspring/decimal).
 > - Evaluate queries with dynamic data (like JSON objects, struct fields, or custom function results).
 > - Easily embed in your own projects and run rule-based filtering or validations.
@@ -30,7 +32,8 @@ A **lightweight rule parsing and evaluation library** for Go. Define human-reada
     - [Debug/Logging](#debuglogging)
 4. [Advanced Examples](#advanced-examples)
 5. [Testing](#testing)
-6. [License](#license)
+6. [Full API Documentation](#full-api-documentation)
+7. [License](#license)
 
 ---
 
@@ -88,6 +91,7 @@ func main() {
             Result: true,
         },
     }
+
     // Evaluate
     ok, err := parsedRule.Evaluate(values)
     if err != nil {
@@ -119,7 +123,7 @@ ruleSet, err := rule.ParseQuery(
     `(usr_id eq 100 or usr_id eq 101) and amount gt [d]"12.34"`, 
     nil,
 )
-// ruleSet is a `GoRule` struct with an internal expression tree + discovered Params.
+// ruleSet is a `Rule` struct with an internal expression tree + discovered Params.
 ```
 
 - **`queryString`** can contain:
@@ -130,22 +134,21 @@ ruleSet, err := rule.ParseQuery(
     - **String operators**: `co` (contains), `sw` (starts with), `ew` (ends with), `in`
 
 **Parsing Errors**  
-If the syntax is invalid, `ParseQuery` returns an error. For example unbalanced parentheses or unknown tokens.
+If the syntax is invalid, `ParseQuery` returns an error. For example, unbalanced parentheses or unknown tokens.
 
 ### Evaluating a Parsed Rule
 
-Once parsed, you get a `GoRule` that contains:
+Once parsed, you get a `rule.Rule` that contains:
 
 - `Params`: The discovered parameters (name, operator, typed expression, etc.).
 
 To evaluate:
 
 1. **Identify each parameter** in `ruleSet.Params`.
-2. Construct a slice of `Evaluation` items, each linking a **Param** from `ruleSet.Params` to an actual **Result** value from your data.
+2. Construct a slice of `rule.Evaluation` items, each linking a **Param** from `ruleSet.Params` to an actual **Result** from your data.
 3. Call `ruleSet.Evaluate(evals []Evaluation)` => returns `(bool, error)`.
 
 ```go
-// Suppose we have parsed `(age gt 18 and can_drive eq true) or age ge 75`
 ok, err := ruleSet.Evaluate([]rule.Evaluation{
     {
         Param:  ruleSet.Params[0], // param with Name="age"
@@ -169,18 +172,18 @@ If a query param is `[f64]"123.45"`, the library enforces that your provided `Re
 
 **Supported type annotations**:
 
-| Annotation  | Meaning / Go Type                |
-|-------------|----------------------------------|
-| `[i64]`     | `int64`                          |
-| `[ui64]`    | `uint64`                         |
-| `[i]`       | `int`                            |
-| `[ui]`      | `uint`                           |
-| `[i32]`     | `int32`                          |
-| `[ui32]`    | `uint32`                         |
-| `[f64]`     | `float64`                        |
-| `[f32]`     | `float32`                        |
-| `[d]`       | `decimal.Decimal` (shopspring)   |
-| `[s]`       | `string`                         |
+| Annotation | Meaning / Go Type                                          |
+|------------|------------------------------------------------------------|
+| `[i64]`    | `int64`                                                    |
+| `[ui64]`   | `uint64`                                                   |
+| `[i]`      | `int`                                                      |
+| `[ui]`     | `uint`                                                     |
+| `[i32]`    | `int32`                                                    |
+| `[ui32]`   | `uint32`                                                   |
+| `[f64]`    | `float64`                                                  |
+| `[f32]`    | `float32`                                                  |
+| `[d]`      | [`decimal.Decimal`](https://github.com/shopspring/decimal) |
+| `[s]`      | `string`                                                   |
 
 ### Function Calls
 
@@ -195,12 +198,12 @@ Here:
 - `"Walt Whitman"` is the compare value.
 
 `ParseQuery` sets `Parameter.InputType = FunctionCall` with `Parameter.FunctionArguments`.  
-**However** for final evaluation, you must supply a single numeric result for `Param`:
+For final evaluation, you must supply a single numeric/string/boolean (etc.) `Result` for `Param`:
 
 ```go
-// If we have "get_author("Song of Myself") eq "Walt Whitman""
+// If we have: get_author("Song of Myself") eq "Walt Whitman"
 param := ruleSet.Params[0]
-// param.FunctionArguments => [ {ArgTypeString, Value: "Song of Myself"} ]
+// param.FunctionArguments => e.g. [ {ArgTypeString, Value: "Song of Myself"} ]
 
 ok, err := ruleSet.Evaluate([]rule.Evaluation{
   {
@@ -208,24 +211,24 @@ ok, err := ruleSet.Evaluate([]rule.Evaluation{
     Result: "Walt Whitman", // the real function result
   },
 })
-// result => true
+// => true
 ```
 
 ### Supported Operators
 
-| Operator | Meaning                                                    |
-|----------|------------------------------------------------------------|
-| `eq`     | equals                                                     |
-| `ne`     | not equals                                                 |
-| `gt`     | greater than                                               |
-| `lt`     | less than                                                  |
-| `ge`     | greater or equal                                           |
-| `le`     | less or equal                                              |
-| `co`     | contains (string)                                          |
-| `sw`     | starts with (string)                                       |
-| `ew`     | ends with (string)                                         |
-| `in`     | substring (or "in" logic)                                  |
-| `pr`     | present (true if the param is provided)                    |
+| Operator | Meaning                  |
+|----------|--------------------------|
+| `eq`     | equals                   |
+| `ne`     | not equals               |
+| `gt`     | greater than             |
+| `lt`     | less than                |
+| `ge`     | greater or equal         |
+| `le`     | less or equal            |
+| `co`     | contains (substring)     |
+| `sw`     | starts with              |
+| `ew`     | ends with                |
+| `in`     | "in" check (substring)   |
+| `pr`     | present (non-nil check)  |
 
 **Logical**: `and`, `or`, plus optional `not` prefix.  
 **Parentheses**: `( expr )`
@@ -271,9 +274,19 @@ You’ll see coverage for query parsing, expression evaluation, typed operators,
 
 ---
 
+## Full API Documentation
+
+Browse all public functions, types, and methods on **[pkg.go.dev](https://pkg.go.dev/github.com/sky93/go-rule)** or read the doc comments in the source code.
+
+---
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).  
 Copyright &copy; 2025 [Sepehr Mohaghegh](https://github.com/sky93).
 
 > Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files ... [full MIT license text](./LICENSE).
+
+**Logo Attribution & Dependencies**
+- The “goopher” logo is copied from [avivcarmi.com](https://avivcarmi.com/we-need-to-talk-about-the-bad-sides-of-go/).
+- This library uses [shopspring/decimal](https://github.com/shopspring/decimal) and [ANTLR4 for Go](https://github.com/antlr4-go/antlr).

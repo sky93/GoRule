@@ -6,16 +6,21 @@ import (
 	"strings"
 )
 
+// queryVisitor is the main AST visitor used by ParseQuery to build an exprTree of logical expressions.
+//
+// See parse.go for queryVisitor's parseValue / parseTypedValue and other helper methods.
 type queryVisitor struct {
 	antlr.ParseTreeVisitor
 	parameters []Parameter
 	parser.BaseSCIMQueryVisitor
 }
 
+// visitRoot is an entry point for the parse tree's RootContext, returning an exprTree or error.
 func (v *queryVisitor) visitRoot(ctx *parser.RootContext) (any, error) {
 	return v.visit(ctx.Query())
 }
 
+// visit is a dispatcher that calls one of the typed visit methods below, based on the parse node type.
 func (v *queryVisitor) visit(ctx parser.IQueryContext) (any, error) {
 	switch actual := ctx.(type) {
 	case *parser.ParenExpContext:
@@ -31,7 +36,7 @@ func (v *queryVisitor) visit(ctx parser.IQueryContext) (any, error) {
 	}
 }
 
-// parenExp => (NOT? SP?)? LPAREN (SP?)? query (SP?)? RPAREN
+// visitParenExp handles parentheses, e.g. (someExp). A NOT token may prefix the group.
 func (v *queryVisitor) visitParenExp(ctx *parser.ParenExpContext) (*exprTree, error) {
 	sub, err := v.visit(ctx.Query())
 	if err != nil {
@@ -45,10 +50,9 @@ func (v *queryVisitor) visitParenExp(ctx *parser.ParenExpContext) (*exprTree, er
 	return subExp, nil
 }
 
-// presentExp => attrPath SP 'pr'
+// visitPresentExp handles a "pr" operator, e.g. "attribute pr" meaning "attribute is present".
 func (v *queryVisitor) visitPresentExp(ctx *parser.PresentExpContext) (*exprTree, error) {
 	name := v.getAttrName(ctx.AttrPath())
-	// We'll store "pr" as an operator meaning "present".
 	p := Parameter{
 		id:        len(v.parameters),
 		Name:      name,
@@ -59,7 +63,7 @@ func (v *queryVisitor) visitPresentExp(ctx *parser.PresentExpContext) (*exprTree
 	return &exprTree{param: &p}, nil
 }
 
-// logicalExp => query SP LOGICAL_OPERATOR SP query
+// visitLogicalExp handles expressions joined by "and" / "or", e.g. "query and query".
 func (v *queryVisitor) visitLogicalExp(ctx *parser.LogicalExpContext) (*exprTree, error) {
 	leftAny, err := v.visit(ctx.Query(0))
 	if err != nil {
@@ -69,11 +73,10 @@ func (v *queryVisitor) visitLogicalExp(ctx *parser.LogicalExpContext) (*exprTree
 	if err != nil {
 		return nil, err
 	}
-	leftNode, _ := leftAny.(*exprTree)
-	rightNode, _ := rightAny.(*exprTree)
+	leftNode := leftAny.(*exprTree)
+	rightNode := rightAny.(*exprTree)
 
-	op := strings.ToLower(ctx.LOGICAL_OPERATOR().GetText()) // "and" or "or"
-
+	op := strings.ToLower(ctx.LOGICAL_OPERATOR().GetText())
 	return &exprTree{
 		op:    op,
 		left:  leftNode,
@@ -81,7 +84,7 @@ func (v *queryVisitor) visitLogicalExp(ctx *parser.LogicalExpContext) (*exprTree
 	}, nil
 }
 
-// compareExp => (attrPath | functionCall) SP operator SP Value
+// visitCompareExp handles a single comparison: (attrPath|functionCall) operator value
 func (v *queryVisitor) visitCompareExp(ctx *parser.CompareExpContext) (*exprTree, error) {
 	isFunc := ctx.AttrPath().FunctionCall() != nil
 	var name string
@@ -96,6 +99,7 @@ func (v *queryVisitor) visitCompareExp(ctx *parser.CompareExpContext) (*exprTree
 	} else {
 		name = v.getAttrName(ctx.AttrPath())
 	}
+
 	opText := strings.ToLower(ctx.GetOp().GetText())
 	valCtx := ctx.Value()
 	val, valType, strict, err := v.parseValue(valCtx)
@@ -116,6 +120,7 @@ func (v *queryVisitor) visitCompareExp(ctx *parser.CompareExpContext) (*exprTree
 		p.InputType = FunctionCall
 		p.FunctionArguments = funcArgs
 	}
+
 	v.parameters = append(v.parameters, p)
 	return &exprTree{param: &p}, nil
 }
