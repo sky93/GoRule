@@ -26,8 +26,7 @@ jobs:
       - name: Run tests
         run: go test -race -covermode atomic -coverprofile=covprofile ./...
 
-      - name: Report Coveralls (Linux)
-        if: startsWith(runner.os, 'Linux')
-        run: curl -sL https://coveralls.io/coveralls-linux.tar.gz | tar -xz && ./coveralls covprofile
+      - name: Report Coveralls
+        run: curl -sL https://coveralls.io/coveralls-linux.tar.gz | tar -xz && ./coveralls report covprofile
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
