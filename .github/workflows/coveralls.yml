@@ -30,6 +30,6 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
         run: |
-          PATH="${PATH}:$(go env GOPATH)/bin"
-          GO111MODULE=on go get -u github.com/mattn/goveralls
+          go install github.com/mattn/goveralls@latest
+          export PATH="${PATH}:$(go env GOPATH)/bin"
           goveralls -service=github
