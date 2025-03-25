@@ -373,6 +373,47 @@ func ExampleParseQuery() {
 	// Output: true
 }
 
+func TestPresenceOperatorWithNot(t *testing.T) {
+	// "not (someParam pr)"
+	query := `not (someParam pr)`
+	r, err := ParseQuery(query, nil)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	// Evaluate with param present => the result should be NOT true => false
+	evals := []Evaluation{{Param: r.Params[0], Result: 123}}
+	got, err := r.Evaluate(evals)
+	if err != nil {
+		t.Fatalf("evaluate error: %v", err)
+	}
+	if got {
+		t.Errorf("expected false, got true")
+	}
+}
+
+func TestChainedStringOps(t *testing.T) {
+	query := `(username sw "A") and (username ew "Z")`
+	r, err := ParseQuery(query, nil)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	if len(r.Params) != 2 {
+		t.Fatalf("expected 2 params, got %d", len(r.Params))
+	}
+	// Provide username => "AZ"
+	evals := []Evaluation{
+		{Param: r.Params[0], Result: "AZ"},
+		{Param: r.Params[1], Result: "AZ"},
+	}
+	got, err := r.Evaluate(evals)
+	if err != nil {
+		t.Fatalf("evaluate error: %v", err)
+	}
+	if !got {
+		t.Fatalf("expected true, got false")
+	}
+}
+
 func BenchmarkParseQuery(b *testing.B) {
 	query := `(usr_id eq 15 or usr_id eq 99) and amount gt [d]"12345.67"`
 	for i := 0; i < b.N; i++ {

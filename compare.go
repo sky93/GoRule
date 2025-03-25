@@ -207,12 +207,21 @@ func compareStringOps(leftVal any, operator string, rightVal any) (bool, error) 
 	switch operator {
 	case "co":
 		// "contains"
+		if r == "" && l != "" {
+			return false, nil
+		}
 		return strings.Contains(l, r), nil
 	case "sw":
 		// "starts with"
+		if r == "" {
+			return false, nil
+		}
 		return strings.HasPrefix(l, r), nil
 	case "ew":
 		// "ends with"
+		if r == "" {
+			return false, nil
+		}
 		return strings.HasSuffix(l, r), nil
 	case "in":
 		// "in" => check if l is in r
