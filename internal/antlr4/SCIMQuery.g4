@@ -1,4 +1,4 @@
-grammar JsonQuery;
+grammar SCIMQuery;
 
 root
   : query EOF
@@ -8,7 +8,7 @@ query
   : NOT? SP? LPAREN SP? query SP? RPAREN  #parenExp
   | query SP LOGICAL_OPERATOR SP query    #logicalExp
   | attrPath SP 'pr'                      #presentExp
-  | (attrPath | functionCall) SP op=(EQ|NE|GT|LT|GE|LE|CO|SW|EW|IN|DGT) SP value #compareExp
+  | (attrPath | functionCall) SP op=(EQ|NE|GT|LT|GE|LE|CO|SW|EW|IN) SP value #compareExp
   ;
 
 NOT : 'not' | 'NOT' ;
@@ -32,7 +32,6 @@ attrPath
    | functionCall
    ;
 
-// Matches things like [f64], [i64], [d], [ui64], etc.
 typeAnnotation
   : '[f64]' | '[i64]' | '[ui64]' | '[i]' | '[ui]' | '[i32]' | '[ui32]' | '[d]' | '[s]' | '[f32]'
   ;

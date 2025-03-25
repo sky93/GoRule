@@ -100,8 +100,8 @@ type exprTree struct {
 	param *Parameter
 }
 
-// ErrorListener is a custom error listener that captures syntax errors during parsing and stores error information.
-type ErrorListener struct {
+// errorListener is a custom error listener that captures syntax errors during parsing and stores error information.
+type errorListener struct {
 	*antlr.DefaultErrorListener
 	hasErrors bool
 	errMsg    error

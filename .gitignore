@@ -9,6 +9,8 @@
 *.dylib
 *.java
 *.class
+*.tokens
+*.interp
 
 # Test binary, built with `go test -c`
 *.test

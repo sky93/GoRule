@@ -1,11 +1,11 @@
-// Code generated from internal/antlr4/JsonQuery.g4 by ANTLR 4.13.2. DO NOT EDIT.
+// Code generated from internal/antlr4/SCIMQuery.g4 by ANTLR 4.13.2. DO NOT EDIT.
 
-package parser // JsonQuery
+package parser // SCIMQuery
 
 import "github.com/antlr4-go/antlr/v4"
 
-// JsonQueryListener is a complete listener for a parse tree produced by JsonQueryParser.
-type JsonQueryListener interface {
+// SCIMQueryListener is a complete listener for a parse tree produced by SCIMQueryParser.
+type SCIMQueryListener interface {
 	antlr.ParseTreeListener
 
 	// EnterRoot is called when entering the root production.
@@ -55,9 +55,6 @@ type JsonQueryListener interface {
 
 	// EnterNull is called when entering the null production.
 	EnterNull(c *NullContext)
-
-	// EnterVersion is called when entering the version production.
-	EnterVersion(c *VersionContext)
 
 	// EnterListOfInts is called when entering the listOfInts production.
 	EnterListOfInts(c *ListOfIntsContext)
@@ -133,9 +130,6 @@ type JsonQueryListener interface {
 
 	// ExitNull is called when exiting the null production.
 	ExitNull(c *NullContext)
-
-	// ExitVersion is called when exiting the version production.
-	ExitVersion(c *VersionContext)
 
 	// ExitListOfInts is called when exiting the listOfInts production.
 	ExitListOfInts(c *ListOfIntsContext)
