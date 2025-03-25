@@ -31,5 +31,5 @@ jobs:
           COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
         run: |
           PATH="${PATH}:$(go env GOPATH)/bin"
-          GO111MODULE=off go get -u github.com/mattn/goveralls
+          GO111MODULE=on go get -u github.com/mattn/goveralls
           goveralls -service=github
