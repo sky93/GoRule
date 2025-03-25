@@ -12,7 +12,7 @@ import (
 // SyntaxError captures ANTLR syntax errors, storing them in errorListener.
 func (l *errorListener) SyntaxError(_ antlr.Recognizer, _ any, line, column int, msg string, _ antlr.RecognitionException) {
 	l.hasErrors = true
-	l.errMsg = NewSyntaxError(fmt.Sprintf("%d:%d: %s", line, column, msg))
+	l.errMsg = newSyntaxError(fmt.Sprintf("%d:%d: %s", line, column, msg))
 }
 
 // evaluate traverses the exprTree to evaluate the final boolean outcome, given a map

@@ -44,7 +44,7 @@ func compareOperator(leftVal any, operator string, rightVal any, strictTypeCheck
 	// Enforce strict type check if requested
 	if strictTypeCheck {
 		if reflect.TypeOf(leftVal) != reflect.TypeOf(rightVal) {
-			return false, NewErrorTypeMismatch(reflect.TypeOf(rightVal).String(), reflect.TypeOf(leftVal).String())
+			return false, newErrorTypeMismatch(reflect.TypeOf(rightVal).String(), reflect.TypeOf(leftVal).String())
 		}
 	}
 
@@ -156,11 +156,11 @@ func compareOperator(leftVal any, operator string, rightVal any, strictTypeCheck
 		} else if operator == "ne" {
 			return l != rightVal, nil
 		} else {
-			return false, NewErrorInvalidOperator(operator, reflect.TypeOf(leftVal).String())
+			return false, newErrorInvalidOperator(operator, reflect.TypeOf(leftVal).String())
 		}
 
 	default:
-		return false, NewErrorTypeMismatch(reflect.TypeOf(rightVal).String(), reflect.TypeOf(leftVal).String())
+		return false, newErrorTypeMismatch(reflect.TypeOf(rightVal).String(), reflect.TypeOf(leftVal).String())
 	}
 }
 
@@ -183,7 +183,7 @@ func compareOrdered[T constraints.Ordered](left T, operator string, right T) (bo
 	case "le":
 		return left <= right, nil
 	default:
-		return false, NewErrorInvalidOperator(operator, reflect.TypeOf(left).String())
+		return false, newErrorInvalidOperator(operator, reflect.TypeOf(left).String())
 	}
 }
 

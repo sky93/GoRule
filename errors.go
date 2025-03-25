@@ -38,17 +38,17 @@ var (
 	ErrorSyntaxError = errors.New("syntax error")
 )
 
-// NewSyntaxError wraps the standard ErrorSyntaxError with line/column info.
-func NewSyntaxError(v string) error {
+// newSyntaxError wraps the standard ErrorSyntaxError with line/column info.
+func newSyntaxError(v string) error {
 	return fmt.Errorf("%w at line %v", ErrorSyntaxError, v)
 }
 
-// NewErrorInvalidOperator constructs an error indicating the given operator is invalid for a particular type.
-func NewErrorInvalidOperator(op string, t string) error {
+// newErrorInvalidOperator constructs an error indicating the given operator is invalid for a particular type.
+func newErrorInvalidOperator(op string, t string) error {
 	return fmt.Errorf("%w: %s on %s", ErrorInvalidOperator, op, t)
 }
 
-// NewErrorTypeMismatch constructs an error indicating the given types do not match during strict comparison.
-func NewErrorTypeMismatch(v string, v2 string) error {
+// newErrorTypeMismatch constructs an error indicating the given types do not match during strict comparison.
+func newErrorTypeMismatch(v string, v2 string) error {
 	return fmt.Errorf("%w: %s and %s", ErrorTypeMismatch, v, v2)
 }
