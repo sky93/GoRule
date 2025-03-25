@@ -24,12 +24,10 @@ jobs:
           go mod download
 
       - name: Run tests
-        run: go test ./...
+        run: go test -race -covermode atomic -coverprofile=covprofile ./...
 
-      - name: Run test coverage
+      - name: Report Coveralls (Linux)
+        if: startsWith(runner.os, 'Linux')
+        run: curl -sL https://coveralls.io/coveralls-linux.tar.gz | tar -xz && ./coveralls covprofile
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
-        run: |
-          go install github.com/mattn/goveralls@latest
-          export PATH="${PATH}:$(go env GOPATH)/bin"
-          goveralls -service=github
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
